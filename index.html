@@ -1,0 +1,46 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Upload & Upsizing Options</title>
+  <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <h2>Upload Your Image</h2>
+  <div id="drop-area">
+    <p>Drag & Drop files here / Click to Upload</p>
+    <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.heic,.tiff" hidden>
+  </div>
+  <div class="file-info" id="file-info"></div>
+  <div class="progress">
+    <div class="progress-bar" id="progress-bar"></div>
+  </div>
+
+  <div class="upsizing-options fade-in" id="upsizing-options">
+    <img id="thumbnail" src="" alt="Thumbnail">
+    <div id="file-meta"></div>
+    <h2 id="upsize-options">Up-size Options</h2>
+    <form id="upsizing-form"></form>
+    <h2 id="additional-enhancements">Additional Enhancements</h2>
+    <div id="additional-services">
+      <label><input type="checkbox" id="select-all-addons"> Select All</label><br>
+      <label><input type="checkbox" class="addon" data-price="30"> +$30.00 Fix Dynamic Range <span class="tooltip-icon" title="Recover lost detail in highlights and shadows"><i class="fas fa-info-circle"></i></span></label><br>
+      <label><input type="checkbox" class="addon" data-price="30"> +$30.00 Fine Art Color Correction <span class="tooltip-icon" title="Adjust white balance, contrast and vibrancy"><i class="fas fa-info-circle"></i></span></label><br>
+      <label><input type="checkbox" class="addon" data-price="50"> +$50.00 Add Lighting Accents <span class="tooltip-icon" title="Highlight or darken specific areas for dramatic effect"><i class="fas fa-info-circle"></i></span></label><br>
+      <label><input type="checkbox" class="addon" data-price="5"> +$5.00 Soft proof (Lumachrome ICC) <span class="tooltip-icon" title="Soft proof using Lumachrome ICC profile"><i class="fas fa-info-circle"></i></span></label><br>
+      <label><input type="checkbox" class="addon" data-price="20"> +$20.00 Hard Color Proof <span class="tooltip-icon" title="Receive a physical 8x12 color proof"><i class="fas fa-info-circle"></i></span></label><br>
+      <label><input type="checkbox" class="addon" data-price="15"> +$15.00 Web Optimized Copies <span class="tooltip-icon" title="Three resized and sharpened images for web/email"><i class="fas fa-info-circle"></i></span></label><br>
+      <label><input type="checkbox" class="addon" data-price="20"> +$20.00 Fine Art Sharpening <span class="tooltip-icon" title="Custom sharpening to emphasize focal points"><i class="fas fa-info-circle"></i></span></label><br>
+    </div>
+    <p id="final-price" style="display: none;"></p>
+    <div id="sticky-price-bar">Price: $0.00</div>
+    <div id="summary"></div>
+    <button id="add-to-cart">Add to Cart</button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
