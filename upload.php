@@ -1,26 +1,102 @@
 <?php
-if ($_FILES['file']['error'] === UPLOAD_ERR_OK) {
-    $uploadDir = __DIR__ . '/uploads/';
-    $thumbDir = __DIR__ . '/thumbs/';
+file_put_contents('log.txt', print_r($_FILES, true), FILE_APPEND);
 
-    if (!file_exists($uploadDir)) mkdir($uploadDir, 0777, true);
-    if (!file_exists($thumbDir)) mkdir($thumbDir, 0777, true);
+header('Content-Type: application/json');
 
-    $filename = basename($_FILES['file']['name']);
-    $filepath = $uploadDir . $filename;
-    move_uploaded_file($_FILES['file']['tmp_name'], $filepath);
+$targetDir = __DIR__ . '/uploads/';
+$thumbDir = __DIR__ . '/thumbnails/';
 
-    // Generate thumbnail (max 450x450)
-    $thumbPath = $thumbDir . 'thumb_' . $filename;
+// Ensure directories exist
+if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
+if (!is_dir($thumbDir)) mkdir($thumbDir, 0777, true);
 
-    $imagick = new Imagick($filepath);
-    $imagick->setImageFormat("jpeg");
-    $imagick->thumbnailImage(450, 450, true);
-    $imagick->writeImage($thumbPath);
-    $imagick->clear();
+// Check for upload errors
+if ($_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+    $errorCode = $_FILES['file']['error'];
+    $errorMessages = [
+        UPLOAD_ERR_INI_SIZE   => 'The uploaded file exceeds the upload_max_filesize directive in php.ini.',
+        UPLOAD_ERR_FORM_SIZE  => 'The uploaded file exceeds the MAX_FILE_SIZE directive in the HTML form.',
+        UPLOAD_ERR_PARTIAL    => 'The uploaded file was only partially uploaded.',
+        UPLOAD_ERR_NO_FILE    => 'No file was uploaded.',
+        UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder.',
+        UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+        UPLOAD_ERR_EXTENSION  => 'File upload stopped by extension.',
+    ];
+    $message = $errorMessages[$errorCode] ?? 'Unknown upload error.';
+    echo json_encode(['success' => false, 'error' => $message]);
+    exit;
+}
 
-    echo json_encode(['thumbnail' => 'thumbs/thumb_' . $filename]);
-} else {
-    http_response_code(400);
-    echo json_encode(['error' => 'Upload failed']);
+$file = $_FILES['file'];
+$originalName = basename($file['name']);
+$ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+
+// Allowed MIME types based on Imagick support and your requirements
+$allowedTypes = [
+    'image/jpeg',
+    'image/png',
+    'application/pdf',
+    'image/tiff',
+    'image/heic',
+    'image/x-adobe-dng',      // DNG support added here
+    'image/x-sony-arw',
+    'image/x-canon-cr2',
+    'image/x-nikon-nef',
+    'image/vnd.adobe.photoshop',
+    'image/x-photoshop',
+    'application/octet-stream',
+    'image/x-targa'
+];
+
+
+// Validate MIME type using finfo
+$finfo = new finfo(FILEINFO_MIME_TYPE);
+$mime = $finfo->file($file['tmp_name']);
+
+if (!in_array($mime, $allowedTypes)) {
+    echo json_encode(['success' => false, 'error' => 'Unsupported file type (' . $mime . ')']);
+    exit;
+}
+
+$filename = uniqid('img_', true) . '.' . $ext;
+$targetFile = $targetDir . $filename;
+
+if (!move_uploaded_file($file['tmp_name'], $targetFile)) {
+    echo json_encode(['success' => false, 'error' => 'Failed to save file']);
+    exit;
+}
+
+$fullPath = __DIR__ . '/uploads/' . $filename;
+
+try {
+    // Load original image to get size BEFORE thumbnailing
+    $originalImage = new Imagick($fullPath . '[0]');
+    $width = $originalImage->getImageWidth();
+    $height = $originalImage->getImageHeight();
+
+    // Now generate thumbnail
+    $originalImage->setImageFormat('jpeg'); // Save as JPEG
+    $originalImage->setImageCompression(Imagick::COMPRESSION_JPEG);
+    $originalImage->setImageCompressionQuality(60); // 60% quality
+    $originalImage->thumbnailImage(450, 450, true);
+
+    $thumbnailName = pathinfo($filename, PATHINFO_FILENAME) . '.jpg';
+    $thumbnailPath = $thumbDir . $thumbnailName;
+    $originalImage->writeImage($thumbnailPath);
+    $originalImage->clear();
+    $originalImage->destroy();
+
+    echo json_encode([
+        'success' => true,
+        'thumbnail' => 'thumbnails/' . $thumbnailName,
+        'filesize' => filesize($fullPath),
+        'width' => $width,
+        'height' => $height
+    ]);
+} catch (Exception $e) {
+    echo json_encode([
+        'success' => false,
+        'error' => 'Thumbnail creation failed: ' . $e->getMessage()
+    ]);
+
 }
