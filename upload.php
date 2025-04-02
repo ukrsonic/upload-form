@@ -69,22 +69,25 @@ if (!move_uploaded_file($file['tmp_name'], $targetFile)) {
 $fullPath = __DIR__ . '/uploads/' . $filename;
 
 try {
-    // Load original image to get size BEFORE thumbnailing
-    $originalImage = new Imagick($fullPath . '[0]');
-    $width = $originalImage->getImageWidth();
-    $height = $originalImage->getImageHeight();
+    $thumb = new Imagick();
+    $readSuccess = @$thumb->readImage($fullPath . '[0]');
 
-    // Now generate thumbnail
-    $originalImage->setImageFormat('jpeg'); // Save as JPEG
-    $originalImage->setImageCompression(Imagick::COMPRESSION_JPEG);
-    $originalImage->setImageCompressionQuality(60); // 60% quality
-    $originalImage->thumbnailImage(450, 450, true);
+    if (!$readSuccess || $thumb->getNumberImages() === 0) {
+        throw new Exception('Imagick could not read the file or contains no pages.');
+    }
+    $width = $thumb->getImageWidth();
+    $height = $thumb->getImageHeight();
+
+    $thumb->setImageFormat('jpeg');
+    $thumb->setImageCompression(Imagick::COMPRESSION_JPEG);
+    $thumb->setImageCompressionQuality(60);
+    $thumb->thumbnailImage(450, 450, true);
 
     $thumbnailName = pathinfo($filename, PATHINFO_FILENAME) . '.jpg';
     $thumbnailPath = $thumbDir . $thumbnailName;
-    $originalImage->writeImage($thumbnailPath);
-    $originalImage->clear();
-    $originalImage->destroy();
+    $thumb->writeImage($thumbnailPath);
+    $thumb->clear();
+    $thumb->destroy();
 
     echo json_encode([
         'success' => true,
@@ -98,5 +101,4 @@ try {
         'success' => false,
         'error' => 'Thumbnail creation failed: ' . $e->getMessage()
     ]);
-
 }
